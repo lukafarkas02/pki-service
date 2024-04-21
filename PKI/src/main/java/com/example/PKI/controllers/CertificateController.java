@@ -31,14 +31,13 @@ public class CertificateController {
         switch (certificateParamsDTO.certificateType){
 
             case "selfSigned":
-//                System.out.println("usao");
                 certificate = keyStoreService.generateRootCertificate(certificateParamsDTO);
                 break;
             case "intermediary":
-//                certificate = keyStoreService.intermediaryCertificate(certificateParamsDTO);
+                certificate = keyStoreService.intermediaryCertificate(certificateParamsDTO);
                 break;
             case "endEntity":
-//                certificate = keyStoreService.endEntityCertificate(certificateParamsDTO);
+                certificate = keyStoreService.endEntityCertificate(certificateParamsDTO);
                 break;
             default:
                 return new ResponseEntity(HttpStatus.BAD_REQUEST);

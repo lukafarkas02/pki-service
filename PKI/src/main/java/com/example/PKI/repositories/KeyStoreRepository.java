@@ -88,8 +88,10 @@ public class KeyStoreRepository {
             BufferedInputStream in = new BufferedInputStream(new FileInputStream(keyStoreFile));
             ks.load(in, keyStorePass.toCharArray());
 
+            //alias == root?(substring) ili ica
             if(ks.isKeyEntry(alias)) {
                 Certificate cert = ks.getCertificate(alias);
+
                 return cert;
             }
         } catch (KeyStoreException e) {

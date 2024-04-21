@@ -15,17 +15,16 @@ import org.bouncycastle.asn1.x500.style.BCStyle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.UserDefinedFileAttributeView;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
 
 import static com.example.PKI.services.CertificateGenerator.*;
 
@@ -107,13 +106,75 @@ public class KeyStoreService {
     }
 
 
+    public X509Certificate intermediaryCertificate(CertificatePostDTO certificateParamsDTO) {
+        String issuer = certificateParamsDTO.getIssuer();
+        //imam serialNumberSertifikata-
+        HashMap<String, String> keyStorePass = findKeyStoreBySerialNumber("src/main/resources/keystores", "295902125850025542629273637053409628302");
+        System.out.println(keyStorePass);
+
+        return null;
+    }
+
+    public X509Certificate endEntityCertificate(CertificatePostDTO certificateParamsDTO) {
+        return null;
+    }
 
 
+    public HashMap<String, String> findKeyStoreBySerialNumber(String directoryPath, String serialNumber) {
+        HashMap<String, String> mapa = new HashMap<>();
+        try {
+            Files.walk(Paths.get(directoryPath))
+                    .filter(Files::isRegularFile)
+                    .filter(path -> path.toString().endsWith(".jks"))
+                    .forEach(path -> {
+                        String keystoreFilePath = path.toString();
+                        Path fajl = Paths.get(keystoreFilePath);
+                        String filePass = getFilePassword(fajl.getFileName().toString());
+                        try {
+                            KeyStore keyStore = KeyStore.getInstance("JKS");
+                            try (FileInputStream fis = new FileInputStream(keystoreFilePath)) {
+                                keyStore.load(fis, filePass.toCharArray());
+                            }
 
+                            Enumeration<String> aliases = keyStore.aliases();
+                            while (aliases.hasMoreElements()) {
+                                String alias = aliases.nextElement();
+                                java.security.cert.Certificate cert = keyStore.getCertificate(alias);
+                                if (cert instanceof X509Certificate) {
+                                    X509Certificate x509Cert = (X509Certificate) cert;
 
+                                    if (x509Cert.getSerialNumber().toString().equals(serialNumber)) {
+                                        mapa.put(fajl.getFileName().toString(), filePass);
+                                        break;
+                                    }
+                                }
+                                break;
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return mapa;
+    }
 
+    private String getFilePassword(String keyStoreFile) {
+        String fileName = "src/main/resources/passwords/passwords.txt";
 
-
-
+        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(",", 2);
+                String fileNamePart = parts[0].trim();
+                System.out.println("File name: " + fileNamePart);
+                if (fileNamePart.equals(keyStoreFile)) return parts[1].trim();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
 }
